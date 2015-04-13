@@ -7,6 +7,8 @@ import com.github.vonnagy.service.container.health.{HealthInfo, HealthState}
  */
 class TestProcessor extends Processor {
 
+  def lineMetricPrefix = "processors.test"
+
   self ! ProcessorReady
 
   override def running: Receive = {

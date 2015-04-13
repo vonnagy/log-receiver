@@ -6,7 +6,7 @@ import akka.actor.ActorContext
 import com.github.vonnagy.service.container.log.LoggingAdapter
 import io.github.cloudify.scala.aws.kinesis.Client.ImplicitExecution._
 import io.github.cloudify.scala.aws.kinesis.KinesisDsl._
-import io.github.cloudify.scala.aws.kinesis.{Client, Definitions}
+import io.github.cloudify.scala.aws.kinesis.{Requests, Client, Definitions}
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Promise, TimeoutException}
@@ -53,7 +53,7 @@ class StreamManager(name: String)(implicit context: ActorContext, client: Client
 
   def createStream(): Option[Definitions.Stream] = {
 
-    val fut = Kinesis.streams.create(name)
+    val fut = Requests.CreateStream(Kinesis.stream(name), shardSize)
     val p = Promise[Option[Definitions.Stream]]
 
     fut onComplete {

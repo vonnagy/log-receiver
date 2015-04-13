@@ -4,14 +4,11 @@ import java.nio.ByteBuffer
 import java.util.concurrent.TimeUnit
 
 import com.github.vonnagy.service.container.health.{HealthInfo, HealthState}
-import com.github.vonnagy.service.container.metrics.Counter
+import com.github.vonnagy.service.container.metrics.{Counter, Meter}
 import io.github.cloudify.scala.aws.kinesis.Client
 import logreceiver.processor.{LogBatch, Processor, ProcessorReady}
 
-import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, Future}
 import scala.util.{Failure, Success}
-import io.github.cloudify.scala.aws.kinesis.Client.ImplicitExecution._
 
 /**
  * Created by ivannagy on 4/10/15.
@@ -30,8 +27,10 @@ class KinesisProcessor extends Processor {
   implicit val kinesisClient = Client.fromCredentials(accessKey, accessSecret, endpoint)
   lazy val streams = verifyStreams()
 
+  def lineMetricPrefix = "processors.kinesis"
+
   val batchReceivedCount = Counter("processors.kinesis.batch.receive")
-  val lineReceivedCount = Counter("processors.kinesis.line.receive")
+  val batchReceivedMeter = Meter("processors.kinesis.batch.receive.meter")
   val failedPutCount = Counter("processors.kinesis.put-failure")
 
   override def preStart() {
@@ -73,28 +72,29 @@ class KinesisProcessor extends Processor {
   def processBatch(batch: LogBatch): Unit = {
 
     batchReceivedCount.incr
+    batchReceivedMeter.meter {
+      val data = processPayload(batch.payload, Seq[Tuple2[ByteBuffer, String]]())
+      val stream = streams.get("log-stream").get.stream
 
-    val data = processPayload(batch.payload, lineReceivedCount, Seq[Tuple2[ByteBuffer, String]]())
-    val stream = streams.get("log-stream").get.stream
-
-    if (stream.isDefined) {
-      val putData = stream.get.multiPut(data.toList)
-      kinesisClient.execute(putData) onComplete {
-        case Failure(f) =>
-          log.error("Error trying to write records to the log-stream stream", f)
-        case Success(putResult) =>
-          putResult.result.getFailedRecordCount.toInt match {
-            case 0 =>
-              log.debug(s"Wrote ${data.size} records to log-stream")
-            case count =>
-              failedPutCount.incr(count.toLong)
-              log.warning(s"Failed to write $count records to log-stream")
-            // TODO What do we do here
-          }
+      if (stream.isDefined) {
+        val putData = stream.get.multiPut(data.toList)
+        kinesisClient.execute(putData) onComplete {
+          case Failure(f) =>
+            log.error("Error trying to write records to the log-stream stream", f)
+          case Success(putResult) =>
+            putResult.result.getFailedRecordCount.toInt match {
+              case 0 =>
+                log.debug(s"Wrote ${data.size} records to log-stream")
+              case count =>
+                failedPutCount.incr(count.toLong)
+                log.warning(s"Failed to write $count records to log-stream")
+              // TODO What do we do here
+            }
+        }
       }
-    }
-    else {
-      log.error(s"Unable to utilize the stream: log-stream")
+      else {
+        log.error(s"Unable to utilize the stream: log-stream")
+      }
     }
 
   }

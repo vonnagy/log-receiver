@@ -40,9 +40,8 @@ class ProcessorSpec extends Specification with Mockito {
     "parse a log batch correctly" in {
 
       val mgr = TestActorRef[TestProcessor](Props(Class.forName("logreceiver.processor.TestProcessor")))
-      val cntr = mock[Counter]
 
-      val p = mgr.underlyingActor.processPayload(payload, cntr, Seq[Tuple2[ByteBuffer, String]]())
+      val p = mgr.underlyingActor.processPayload(payload, Seq[Tuple2[ByteBuffer, String]]())
       p.size must be equalTo (6)
       p(0)._2 must beEqualTo("t.58895e6d-a50a-496d-9ad6-96f4667bb1d7")
       p(0)._1.array().last must beEqualTo('\n')

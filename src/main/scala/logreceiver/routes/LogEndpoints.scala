@@ -3,7 +3,7 @@ package logreceiver.routes
 import akka.actor.{ActorRefFactory, ActorSystem}
 import com.github.vonnagy.service.container.http.routing.RoutedEndpoints
 import com.github.vonnagy.service.container.log.LoggingAdapter
-import com.github.vonnagy.service.container.metrics.Counter
+import com.github.vonnagy.service.container.metrics.{Meter, Counter}
 import logreceiver.processor.LogBatch
 import logreceiver.{logplexFrameId, logplexMsgCount, logplexToken}
 import spray.http.StatusCodes
@@ -16,8 +16,9 @@ import scala.util.Try
 class LogEndpoints(implicit system: ActorSystem,
                    actorRefFactory: ActorRefFactory) extends RoutedEndpoints with LoggingAdapter {
 
-  val logCount = Counter("http.log.recieve")
-  val logFailedCount = Counter("http.log.recieve.failed")
+  val logCount = Counter("http.log.receive")
+  val logMeter = Meter("http.log.receive.meter")
+  val logFailedCount = Counter("http.log.receive.failed")
 
   val route = {
     post {
@@ -36,6 +37,7 @@ class LogEndpoints(implicit system: ActorSystem,
                           system.eventStream.publish(LogBatch(token, frameId, msgCount, payload))
                           // Increment the counter
                           logCount.incr
+                          logMeter.mark
                           // Mark the request as complete
                           ctx.complete(StatusCodes.NoContent)
                         }) recover {
