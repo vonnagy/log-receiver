@@ -1,30 +1,57 @@
 package logreceiver.routes
 
-import akka.actor.{ActorSystem, ActorRefFactory}
+import akka.actor.{ActorRefFactory, ActorSystem}
 import com.github.vonnagy.service.container.http.routing.RoutedEndpoints
-import spray.http.{MediaType, MediaTypes, StatusCodes}
+import com.github.vonnagy.service.container.log.LoggingAdapter
+import com.github.vonnagy.service.container.metrics.Counter
+import logreceiver.processor.LogBatch
+import logreceiver.{logplexFrameId, logplexMsgCount, logplexToken}
+import spray.http.HttpHeaders.`Content-Length`
+import spray.http.StatusCodes
+
+import scala.util.Try
 
 /**
  * Created by ivannagy on 4/9/15.
  */
 class LogEndpoints(implicit system: ActorSystem,
-                   actorRefFactory: ActorRefFactory) extends RoutedEndpoints {
+                   actorRefFactory: ActorRefFactory) extends RoutedEndpoints with LoggingAdapter {
 
-    val `application/logplex-1` = MediaTypes.register(MediaType.custom("application", "logplex-1", true, false, Nil, Map.empty))
+  val logCount = Counter("http.log.recieve")
+  val logFailedCount = Counter("http.log.recieve.failed")
 
-    // Import the default Json marshaller and un-marshaller
-    implicit val marshaller = jsonMarshaller
-    implicit val unmarshaller = jsonUnmarshaller[Product]
+  val route = {
+    post {
+      path("logs") {
+        acceptableMediaTypes(logreceiver.`application/logplex-1`) {
+          headerValueByType[`Content-Length`]() { length =>
+            logplexMsgCount { msgCount =>
+              logplexToken { token =>
+                logplexFrameId { frameId =>
+                  entity(as[String]) { payload =>
+                    respondWithHeader(spray.http.HttpHeaders.`Content-Length`(0)) { ctx =>
 
-    val route = {
-      post {
-        path("logs") {
-          acceptableMediaTypes(`application/logplex-1`) {
-            respondWithHeader(spray.http.HttpHeaders.`Content-Length`(0)) {
-              complete(StatusCodes.NoContent)
+                      Try({
+                        // Publish the batch to the waiting processor(s)
+                        system.eventStream.publish(LogBatch(token, frameId, msgCount, payload))
+                        // Increment the counter
+                        logCount.incr
+                        // Mark the request as complete
+                        ctx.complete(StatusCodes.NoContent)
+                      }) recover {
+                        case e =>
+                          log.error(s"Unable to handle the log: $logplexFrameId", e)
+                          ctx.complete(StatusCodes.InternalServerError)
+                      }
+                    }
+
+                  }
+                }
+              }
             }
           }
         }
       }
     }
   }
+}
