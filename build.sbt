@@ -8,8 +8,20 @@ version := "1.0"
 
 scalaVersion := "2.10.4"
 
+val AKKA_VERSION = "2.3.8"
+val SPRAY_VERSION = "1.3.1"
+
+bintrayResolverSettings
+
 libraryDependencies ++= Seq(
-  "com.github.vonnagy" % "service-container_2.10" % "1.0.0"
+  "com.github.vonnagy"    % "service-container_2.10"  % "1.0.0",
+  "com.amazonaws"         % "amazon-kinesis-client"   % "1.2.1",
+  "io.github.cloudify"    %% "scalazon"               % "0.11",
+  "com.typesafe.akka"     %% "akka-testkit"           % AKKA_VERSION    % "test",
+  "io.spray"              % "spray-testkit"           % SPRAY_VERSION   % "test",
+  "junit"                 % "junit"                   % "4.12"          % "test",
+  "org.specs2"            %% "specs2-core"            % "2.4.15"        % "test",
+  "org.scalamock"         %% "scalamock-specs2-support" % "3.2.1" % "test" exclude("org.specs2", "specs2")
 )
 
 // set the main class for packaging the main jar

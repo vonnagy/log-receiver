@@ -1,6 +1,7 @@
 package logreceiver
 
 import com.github.vonnagy.service.container.ContainerBuilder
+import logreceiver.processor.ProcessorManager
 import logreceiver.routes.LogEndpoints
 
 /**
@@ -12,7 +13,8 @@ object Service extends App {
   // applying extras.
   val service = new ContainerBuilder()
     // Add some endpoints
-    .withRoutes(classOf[LogEndpoints]).build
+    .withRoutes(classOf[LogEndpoints])
+    .withActors(("processor-manager", ProcessorManager.props())).build
 
   service.start
 
