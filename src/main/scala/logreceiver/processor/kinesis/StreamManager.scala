@@ -9,7 +9,7 @@ import io.github.cloudify.scala.aws.kinesis.KinesisDsl._
 import io.github.cloudify.scala.aws.kinesis.{Client, Definitions}
 
 import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, Future, Promise, TimeoutException}
+import scala.concurrent.{Await, Promise, TimeoutException}
 import scala.util.{Failure, Success}
 
 /**
@@ -25,7 +25,7 @@ class StreamManager(name: String)(implicit context: ActorContext, client: Client
 
   val stream = getStream
 
-  def getStream: Option[Definitions.Stream] = {
+  private def getStream: Option[Definitions.Stream] = {
     log.info("Locating the stream $name")
 
     val p = Promise[Option[Definitions.Stream]]
