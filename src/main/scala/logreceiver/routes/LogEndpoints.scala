@@ -23,31 +23,35 @@ class LogEndpoints(implicit system: ActorSystem,
   val route = {
     post {
       path("logs") {
-        acceptableMediaTypes(logreceiver.`application/logplex-1`) {
-          headerValueByType[`Content-Length`]() { length =>
-            logplexMsgCount { msgCount =>
-              logplexToken { token =>
-                logplexFrameId { frameId =>
-                  entity(as[String]) { payload =>
-                    respondWithHeader(`Content-Length`(0)) { ctx =>
+        logRequest("log-received", akka.event.Logging.DebugLevel) {
+          acceptableMediaTypes(logreceiver.`application/logplex-1`) {
+            requestEntityPresent {
+              //headerValueByType[`Content-Length`]() { length =>
+              logplexMsgCount { msgCount =>
+                logplexToken { token =>
+                  logplexFrameId { frameId =>
+                    entity(as[String]) { payload =>
+                      respondWithHeader(`Content-Length`(0)) { ctx =>
 
-                      Try({
-                        // Publish the batch to the waiting processor(s)
-                        system.eventStream.publish(LogBatch(token, frameId, msgCount, payload))
-                        // Increment the counter
-                        logCount.incr
-                        // Mark the request as complete
-                        ctx.complete(StatusCodes.NoContent)
-                      }) recover {
-                        case e =>
-                          log.error(s"Unable to handle the log: $logplexFrameId", e)
-                          ctx.complete(StatusCodes.InternalServerError)
+                        Try({
+                          // Publish the batch to the waiting processor(s)
+                          system.eventStream.publish(LogBatch(token, frameId, msgCount, payload))
+                          // Increment the counter
+                          logCount.incr
+                          // Mark the request as complete
+                          ctx.complete(StatusCodes.NoContent)
+                        }) recover {
+                          case e =>
+                            log.error(s"Unable to handle the log: $logplexFrameId", e)
+                            ctx.complete(StatusCodes.InternalServerError)
+                        }
                       }
-                    }
 
+                    }
                   }
                 }
               }
+              //}
             }
           }
         }
