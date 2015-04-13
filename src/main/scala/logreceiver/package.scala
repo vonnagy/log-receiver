@@ -1,5 +1,5 @@
 import spray.http.HttpHeaders.RawHeader
-import spray.http.{HttpHeaders, MediaType, MediaTypes}
+import spray.http.{MediaType, MediaTypes}
 import spray.routing.directives.HeaderDirectives.headerValuePF
 
 /**
@@ -12,11 +12,6 @@ package object logreceiver {
   val `Logplex-Msg-Count` = "Logplex-Msg-Count"
   val `Logplex-Frame-Id` = "Logplex-Frame-Id"
   val `Logplex-Drain-Token` = "Logplex-Drain-Token"
-
-  val logplexContentLength =
-    headerValuePF {
-      case HttpHeaders.`Content-Length`(length) => length
-    }
 
   val logplexMsgCount =
     headerValuePF {

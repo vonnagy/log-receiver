@@ -29,7 +29,7 @@ class LogEndpoints(implicit system: ActorSystem,
               logplexToken { token =>
                 logplexFrameId { frameId =>
                   entity(as[String]) { payload =>
-                    respondWithHeader(spray.http.HttpHeaders.`Content-Length`(0)) { ctx =>
+                    respondWithHeader(`Content-Length`(0)) { ctx =>
 
                       Try({
                         // Publish the batch to the waiting processor(s)

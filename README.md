@@ -1,6 +1,7 @@
 # log-receiver
 
-A barebones Scala app, which can easily be deployed to Heroku.  
+This is a service that receives logs from Heroku drains and forwards them on to storage or processors. It is written in Scala, 
+which can easily be deployed to Heroku.  
 
 This application support the [Getting Started with Scala on Heroku](https://devcenter.heroku.com/articles/getting-started-with-scala) article - check it out.
 
