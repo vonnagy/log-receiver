@@ -62,7 +62,7 @@ class ProcessorManager extends Actor with RegisteredHealthCheckActor with ActorL
           var config = master.getConfig(entry.getKey)
           var clazz = config.getString("class");
 
-          val processor = context.actorOf(FromConfig.props(Props(Class.forName(clazz))), entry.getKey.toLowerCase)
+          val processor = context.actorOf(Props(Class.forName(clazz)), entry.getKey.toLowerCase)
           Some(processor)
         }
         else {
