@@ -6,7 +6,6 @@ import com.github.vonnagy.service.container.log.LoggingAdapter
 import com.github.vonnagy.service.container.metrics.Counter
 import logreceiver.processor.LogBatch
 import logreceiver.{logplexFrameId, logplexMsgCount, logplexToken}
-import spray.http.HttpHeaders.`Content-Length`
 import spray.http.StatusCodes
 
 import scala.util.Try
@@ -31,8 +30,7 @@ class LogEndpoints(implicit system: ActorSystem,
                 logplexToken { token =>
                   logplexFrameId { frameId =>
                     entity(as[String]) { payload =>
-                      respondWithHeader(`Content-Length`(0)) { ctx =>
-
+                      noop { ctx =>
                         Try({
                           // Publish the batch to the waiting processor(s)
                           system.eventStream.publish(LogBatch(token, frameId, msgCount, payload))
@@ -46,12 +44,11 @@ class LogEndpoints(implicit system: ActorSystem,
                             ctx.complete(StatusCodes.InternalServerError)
                         }
                       }
-
                     }
                   }
                 }
+                //}
               }
-              //}
             }
           }
         }
