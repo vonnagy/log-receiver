@@ -30,7 +30,7 @@ class LogEndpoints(implicit system: ActorSystem,
                 logplexToken { token =>
                   logplexFrameId { frameId =>
                     entity(as[String]) { payload =>
-                      respondWithHeader(HttpHeaders.`Content-Length`(0)) { ctx =>
+                      noop { ctx =>
                         Try({
                           // Publish the batch to the waiting processor(s)
                           system.eventStream.publish(LogBatch(token, frameId, msgCount, payload))

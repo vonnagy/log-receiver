@@ -44,7 +44,6 @@ class LogEndpointsSpec extends Specification with Specs2RouteTest with HttpServi
         .withEntity(logSingleLine) ~> sealRoute(endpoints.route) ~> check {
 
         status must be(StatusCodes.NoContent)
-        header("Content-Length").get.value must beEqualTo("0")
       }
     }
   }
