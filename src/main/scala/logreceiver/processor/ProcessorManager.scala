@@ -39,7 +39,11 @@ class ProcessorManager extends Actor with RegisteredHealthCheckActor with ActorL
   }
 
   override def postStop(): Unit = {
-    context.children.foreach(context.stop(_))
+    context.children.foreach { c =>
+      context.system.eventStream.unsubscribe(c, classOf[LogBatch])
+      context.stop(c)
+    }
+
     log.info("Processor manager stopped: {}", context.self.path)
   }
 
