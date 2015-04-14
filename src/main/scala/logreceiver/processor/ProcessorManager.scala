@@ -4,14 +4,13 @@ import java.util.concurrent.TimeoutException
 
 import akka.actor._
 import akka.pattern.ask
-import akka.routing.FromConfig
 import akka.util.Timeout
-import com.github.vonnagy.service.container.health.{HealthInfo, HealthState, RegisteredHealthCheckActor}
+import com.github.vonnagy.service.container.health.{GetHealth, HealthInfo, HealthState, RegisteredHealthCheckActor}
 import com.github.vonnagy.service.container.log.ActorLoggingAdapter
 
 import scala.collection.JavaConversions._
 import scala.concurrent.duration._
-import scala.concurrent.{Await, Future, Promise}
+import scala.concurrent.{Future, Promise}
 import scala.util.{Failure, Success}
 
 
@@ -62,7 +61,7 @@ class ProcessorManager extends Actor with RegisteredHealthCheckActor with ActorL
           var config = master.getConfig(entry.getKey)
           var clazz = config.getString("class");
 
-          val processor = context.actorOf(Props(Class.forName(clazz)), entry.getKey.toLowerCase)
+          val processor = context.actorOf(Props(Class.forName(clazz)).withDispatcher("akka.processor-dispatcher"), entry.getKey.toLowerCase)
           Some(processor)
         }
         else {
@@ -86,7 +85,7 @@ class ProcessorManager extends Actor with RegisteredHealthCheckActor with ActorL
   override def getHealth: Future[HealthInfo] = {
 
     if (context.children.isEmpty) {
-      Future { new HealthInfo("processors", HealthState.DEGRADED, s"There are no configured processors running") }
+      Future { HealthInfo("processors", HealthState.DEGRADED, s"There are no configured processors running") }
     }
     else {
       implicit val timeout = Timeout(2 seconds)
@@ -96,7 +95,7 @@ class ProcessorManager extends Actor with RegisteredHealthCheckActor with ActorL
       future.onComplete({
         case Failure(f) =>
           log.error("Error fetching health", f)
-          p success new HealthInfo("processors", HealthState.DEGRADED, s"We were unable to determine the health on the processors")
+          p success HealthInfo("processors", HealthState.DEGRADED, s"We were unable to determine the health on the processors")
         case Success(answers) =>
           p.success(HealthInfo("processors", HealthState.OK,
             s"The following processors are currently running: ${context.children.map(_.path.name).mkString(", ")}",
