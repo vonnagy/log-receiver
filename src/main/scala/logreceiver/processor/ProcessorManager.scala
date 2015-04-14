@@ -5,7 +5,7 @@ import java.util.concurrent.TimeoutException
 import akka.actor._
 import akka.pattern.ask
 import akka.util.Timeout
-import com.github.vonnagy.service.container.health.{GetHealth, HealthInfo, HealthState, RegisteredHealthCheckActor}
+import com.github.vonnagy.service.container.health.{HealthInfo, HealthState, RegisteredHealthCheckActor}
 import com.github.vonnagy.service.container.log.ActorLoggingAdapter
 
 import scala.collection.JavaConversions._
@@ -85,7 +85,9 @@ class ProcessorManager extends Actor with RegisteredHealthCheckActor with ActorL
   override def getHealth: Future[HealthInfo] = {
 
     if (context.children.isEmpty) {
-      Future { HealthInfo("processors", HealthState.DEGRADED, s"There are no configured processors running") }
+      Future {
+        HealthInfo("processors", HealthState.DEGRADED, s"There are no configured processors running")
+      }
     }
     else {
       implicit val timeout = Timeout(2 seconds)

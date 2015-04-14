@@ -8,6 +8,7 @@ import com.github.vonnagy.service.container.metrics.{Counter, Meter}
 import io.github.cloudify.scala.aws.kinesis.Client
 import logreceiver.processor.{LogBatch, Processor, ProcessorReady}
 
+import scala.collection.JavaConversions._
 import scala.util.{Failure, Success}
 
 /**
@@ -88,6 +89,9 @@ class KinesisProcessor extends Processor {
               case count =>
                 failedPutCount.incr(count.toLong)
                 log.warning(s"Failed to write $count records to log-stream")
+                putResult.result.getRecords.filter(r => r.getErrorCode != null && r.getErrorCode.length > 0).groupBy(_.getErrorCode).foreach { r =>
+                  log.warning(s"${r._1}: ${r._2.size}")
+                }
               // TODO What do we do here
             }
         }
