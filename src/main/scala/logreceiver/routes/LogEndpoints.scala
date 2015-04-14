@@ -6,7 +6,7 @@ import com.github.vonnagy.service.container.log.LoggingAdapter
 import com.github.vonnagy.service.container.metrics.{Meter, Counter}
 import logreceiver.processor.LogBatch
 import logreceiver.{logplexFrameId, logplexMsgCount, logplexToken}
-import spray.http.StatusCodes
+import spray.http.{HttpHeaders, StatusCodes}
 
 import scala.util.Try
 
@@ -26,12 +26,11 @@ class LogEndpoints(implicit system: ActorSystem,
         logRequest("log-received", akka.event.Logging.DebugLevel) {
           acceptableMediaTypes(logreceiver.`application/logplex-1`) {
             requestEntityPresent {
-              //headerValueByType[`Content-Length`]() { length =>
               logplexMsgCount { msgCount =>
                 logplexToken { token =>
                   logplexFrameId { frameId =>
                     entity(as[String]) { payload =>
-                      noop { ctx =>
+                      respondWithHeader(HttpHeaders.`Content-Length`(0)) { ctx =>
                         Try({
                           // Publish the batch to the waiting processor(s)
                           system.eventStream.publish(LogBatch(token, frameId, msgCount, payload))
@@ -49,7 +48,6 @@ class LogEndpoints(implicit system: ActorSystem,
                     }
                   }
                 }
-                //}
               }
             }
           }
